@@ -1,4 +1,4 @@
-# Milestone 1 - APP_NAME_HERE (Unit 7)
+# Milestone 1 - Movie Recommender App (Unit 7)
 
 ## Table of Contents
 
@@ -10,17 +10,17 @@
 
 ### Description
 
-[Description of your app]
+The Movie Recommender App helps users find movies they will enjoy by asking a few simple questions about their preferences (genre, mood, etc.). It uses a movie API to gather current movie data and an AI model to generate personalized recommendations based on the user’s answers.
 
 ### App Evaluation
 
 [Evaluation of your app across the following attributes]
-- **Category:**
-- **Mobile:**
-- **Story:**
-- **Market:**
-- **Habit:**
-- **Scope:**
+- **Category:** Entertainment / Recommendation
+- **Mobile:** Mobile-first app with a simple question-based interface and results screen
+- **Story:** A user wants to quickly find a movie to watch without scrolling endlessly. The app asks a few questions and gives a tailored recommendation.
+- **Market:** Movie watchers, students, and casual users who want quick suggestions
+- **Habit:** Can be used repeatedly whenever the user wants something new to watch
+- **Scope:** Moderate — combines API usage, UI, and AI integration but remains achievable
 
 ## Product Spec
 
