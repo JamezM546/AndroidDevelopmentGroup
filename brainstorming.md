@@ -75,7 +75,7 @@
 
 ## Final App Idea
 
-**Final Chosen Idea:** [Name of the app you chose]
+**Final Chosen Idea:** Movie Recommender
 
 **Why we chose this idea:**
 - [Explain your decision - what made this the best choice among your top 3?]
@@ -83,7 +83,7 @@
 - [How does it balance feasibility with impact?]
 
 **Key Features We'll Focus On:**
-1. [Feature 1]
-2. [Feature 2]
-3. [Feature 3]
+1. Interactive UI that asks the user questions to narrow down their specific genre and movie tastes.
+2. Interaction with movie API to fetch recent and upcoming movie information to use to select from.
+3. AI API call which passes up to date movie information as well as users Q&A to the LLM to make a decision on which movie they would probably enjoy the most.
 
