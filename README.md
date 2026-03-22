@@ -28,13 +28,15 @@ The Movie Recommender App helps users find movies they will enjoy by asking a fe
 
 **Required Features**
 
-1. [fill in your required user features here]
-2. ...
-3. ...
+1. User answers questions about movie preferences (genre, mood, etc.)
+2. App fetches movie data from a movie API
+3. AI generates a personalized movie recommendation
+4. Display recommended movie with title, description, and rating
+5. Show multiple recommendations instead of one
 
 **Optional Features**
 
-1. [fill in your optional user features here]
+1. Save favorite movies
 2. ...
 3. ...
 
