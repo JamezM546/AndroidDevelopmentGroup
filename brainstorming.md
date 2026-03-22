@@ -47,17 +47,17 @@
 
 ---
 
-### App Idea 2: [Name]
+### App Idea 2: Workout Tracker
 **Why this idea?**
-- [Explain why this is a strong candidate]
-
+- This app is a strong candidate because it focuses on a practical, real world use case that users can benefit from. The idea originated from a group member's dissatisfaction with their own workout app, indicating a real desire for this idea.
 **Pros:**
-- [List advantages]
-- [Strengths]
+- Can be completed with information from this class: (RecyclerView, Fragments, Room), no need for external APIs.
+- Can easily extend features.
 
 **Cons:**
-- [List challenges]
-- [Difficulties]
+- UI could get complex when trying to present data.
+- Would need to a way to include every kind of workout, which may just end up requiring hard-coding.
+- Potentially difficult to make a "unique" workout app.
 
 ---
 
