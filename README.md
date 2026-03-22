@@ -36,9 +36,9 @@ The Movie Recommender App helps users find movies they will enjoy by asking a fe
 
 **Optional Features**
 
-1. Save favorite movies
-2. ...
-3. ...
+1. Rate movies to improve future recommendations
+2. Sort by genres, rating, etc.
+3. Show full movie details on a separate screen
 
 ### 2. Screen Archetypes
 
