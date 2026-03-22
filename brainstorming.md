@@ -17,7 +17,7 @@
    - **Description:** An app that can fetch real time stock prices via api and show them on the screen. - Meer
 
 
-5. **AI Movie Reccomender**
+5. **AI Movie Recommender**
    - **Description:** An app that asks questions and fetches recent movies and AI picks which movie it thinks you would enjoy the most - Tommy
 
 
