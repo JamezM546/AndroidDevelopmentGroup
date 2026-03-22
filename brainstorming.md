@@ -18,11 +18,11 @@
 
 
 5. **AI Movie Reccomender**
-   - **Description: An app that asks questions and fetches recent movies and AI picks which movie it thinks you would enjoy the most - Tommy** 
+   - **Description:** An app that asks questions and fetches recent movies and AI picks which movie it thinks you would enjoy the most - Tommy
 
 
 6. **Weather App**
-   - **Description: An app with an interactive dashboard to view up to date weather information and display it in a fun way** 
+   - **Description:** An app with an interactive dashboard to view up to date weather information and display it in a fun way
 
 
 ---
