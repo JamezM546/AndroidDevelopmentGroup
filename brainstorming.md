@@ -29,19 +29,21 @@
 
 ## Top 3 App Ideas (Evaluation)
 
-### App Idea 1: [Name]
+### App Idea 1: AI Movie Recommender
 **Why this idea?**
-- [Explain why this is a strong candidate - 2-3 sentences]
+- This is a good idea because it utlizes many concepts that we learned such as different screens, API calls, JSON parsing, buttons, etc. It also just seems like a fun project to work on and it can have some real impact with people struggling with what movie to watch.
 
 **Pros:**
-- [List advantages and strengths]
-- [Technical feasibility]
-- [User appeal]
+- Good coverage of topics learned in class
+- Definitely feasible for the amount of class time left to make it
+- Good user appeal and we can be very flexible with the design
+- We can easily add a ton of new features to keep things interesting
 
 **Cons:**
-- [List potential challenges]
-- [Technical difficulties]
-- [Market competition]
+- The recommendation logic can get complex if we try to incorporate too much into it
+- Cannot be used offline because of the reliance on multiple API calls to external sources
+- Lots of images and AI calls can possibly create a slower app environment
+- High market competition because a lot of similar apps already exist
 
 ---
 
@@ -75,7 +77,7 @@
 
 ## Final App Idea
 
-**Final Chosen Idea:** Movie Recommender
+**Final Chosen Idea:** AI Movie Recommender
 
 **Why we chose this idea:**
 - [Explain your decision - what made this the best choice among your top 3?] - We felt this project was in scope and more relatable to us, and it allowed to apply our skills directly from what we've learned compared to the other ideas.
