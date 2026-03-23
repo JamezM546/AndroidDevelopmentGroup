@@ -92,7 +92,7 @@ The Movie Recommender App helps users find movies they will enjoy by asking a fe
 
 ## Wireframes
 
-[Add picture of your hand sketched wireframes in this section] <img src="YOUR_WIREFRAME_IMAGE_URL" width=600>
+![image alt](https://github.com/JamezM546/AndroidDevelopmentGroup/blob/e484efd4729c29ef3ded0ac032144fb2b41a53b6/images/wireframe.JPG)
 
 <br>
 
