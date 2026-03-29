@@ -12,22 +12,58 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.nextflix.navigation.OnboardingNavHost
 import com.example.nextflix.ui.screens.MoviePreferenceQuizScreen
 import com.example.nextflix.ui.theme.NextFlixTheme
+import com.example.nextflix.ui.viewmodel.PersonalityQuizViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val coldActivityStart = savedInstanceState == null
         setContent {
             NextFlixTheme {
-                NextFlixApp()
+                val personalityVm: PersonalityQuizViewModel = viewModel()
+                val initialLoadDone by personalityVm.initialLoadDone.collectAsStateWithLifecycle()
+                val hasStoredProfile by personalityVm.hasStoredProfile.collectAsStateWithLifecycle()
+                var showMainApp by rememberSaveable { mutableStateOf(false) }
+
+                LaunchedEffect(initialLoadDone, hasStoredProfile) {
+                    if (initialLoadDone && hasStoredProfile) {
+                        showMainApp = true
+                    }
+                }
+
+                when {
+                    !initialLoadDone -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    showMainApp -> {
+                        NextFlixApp(personalityQuizViewModel = personalityVm)
+                    }
+                    else -> {
+                        OnboardingNavHost(
+                            viewModel = personalityVm,
+                            onCompleteOnboarding = { showMainApp = true },
+                            coldActivityStart = coldActivityStart
+                        )
+                    }
+                }
             }
         }
     }
@@ -43,17 +79,19 @@ enum class AppTab(val label: String, val icon: ImageVector) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NextFlixApp() {
+fun NextFlixApp(
+    personalityQuizViewModel: PersonalityQuizViewModel
+) {
     var selectedTab by remember { mutableStateOf(AppTab.HOME) }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         text = "NextFlix",
                         fontWeight = FontWeight.Bold
-                    ) 
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -79,7 +117,7 @@ fun NextFlixApp() {
                 .padding(paddingValues)
         ) {
             when (selectedTab) {
-                AppTab.HOME -> HomeTabContent()
+                AppTab.HOME -> HomeTabContent(personalityQuizViewModel = personalityQuizViewModel)
                 AppTab.MOVIE_QUIZ -> MoviePreferenceQuizScreen()
                 AppTab.BOOK_QUIZ -> PlaceholderScreen("Book Quiz", "Coming soon!")
                 AppTab.RESULTS -> PlaceholderScreen("Results", "Coming soon!")
@@ -90,7 +128,10 @@ fun NextFlixApp() {
 }
 
 @Composable
-fun HomeTabContent() {
+fun HomeTabContent(
+    personalityQuizViewModel: PersonalityQuizViewModel
+) {
+    val quizResult by personalityQuizViewModel.lastResult.collectAsStateWithLifecycle()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -104,15 +145,26 @@ fun HomeTabContent() {
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
             text = "Your ultimate destination for personalized movie and book recommendations.",
             fontSize = 16.sp,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        if (quizResult != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Your personality quiz is saved and will help refine future picks.",
+                fontSize = 14.sp,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 
