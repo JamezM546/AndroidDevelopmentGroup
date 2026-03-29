@@ -37,6 +37,7 @@ class MainActivity : ComponentActivity() {
                 val initialLoadDone by personalityVm.initialLoadDone.collectAsStateWithLifecycle()
                 val hasStoredProfile by personalityVm.hasStoredProfile.collectAsStateWithLifecycle()
                 var showMainApp by rememberSaveable { mutableStateOf(false) }
+                var startTab by remember { mutableStateOf(AppTab.HOME)}
 
                 LaunchedEffect(initialLoadDone, hasStoredProfile) {
                     if (initialLoadDone && hasStoredProfile) {
@@ -54,12 +55,18 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     showMainApp -> {
-                        NextFlixApp(personalityQuizViewModel = personalityVm)
+                        NextFlixApp(
+                            personalityQuizViewModel = personalityVm,
+                            initialTab = startTab
+                        )
                     }
                     else -> {
                         OnboardingNavHost(
                             viewModel = personalityVm,
-                            onCompleteOnboarding = { showMainApp = true },
+                            onCompleteOnboarding = { tab ->
+                                startTab = tab
+                                showMainApp = true
+                            },
                             coldActivityStart = coldActivityStart
                         )
                     }
@@ -80,9 +87,10 @@ enum class AppTab(val label: String, val icon: ImageVector) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NextFlixApp(
-    personalityQuizViewModel: PersonalityQuizViewModel
+    personalityQuizViewModel: PersonalityQuizViewModel,
+    initialTab: AppTab = AppTab.HOME
 ) {
-    var selectedTab by remember { mutableStateOf(AppTab.HOME) }
+    var selectedTab by remember { mutableStateOf(initialTab) }
 
     Scaffold(
         topBar = {

@@ -5,6 +5,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.nextflix.AppTab
+import com.example.nextflix.ui.screens.ContentChoiceScreen
 import com.example.nextflix.ui.screens.PersonalityQuizScreen
 import com.example.nextflix.ui.screens.QuizSubmittedScreen
 import com.example.nextflix.ui.screens.WelcomeScreen
@@ -13,7 +15,7 @@ import com.example.nextflix.ui.viewmodel.PersonalityQuizViewModel
 @Composable
 fun OnboardingNavHost(
     viewModel: PersonalityQuizViewModel,
-    onCompleteOnboarding: () -> Unit,
+    onCompleteOnboarding: (AppTab) -> Unit,
     coldActivityStart: Boolean
 ) {
     val navController = rememberNavController()
@@ -50,7 +52,13 @@ fun OnboardingNavHost(
         composable(AppRoutes.QuizSubmitted) {
             QuizSubmittedScreen(
                 viewModel = viewModel,
-                onContinue = onCompleteOnboarding
+                onContinue = { navController.navigate(AppRoutes.ContentChoice)}
+            )
+        }
+        composable(AppRoutes.ContentChoice){
+            ContentChoiceScreen(
+                onChooseMovies = { onCompleteOnboarding(AppTab.MOVIE_QUIZ) },
+                onChooseBooks = { onCompleteOnboarding(AppTab.BOOK_QUIZ)}
             )
         }
     }
