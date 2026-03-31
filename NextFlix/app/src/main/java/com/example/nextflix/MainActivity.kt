@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nextflix.navigation.OnboardingNavHost
 import com.example.nextflix.ui.screens.MoviePreferenceQuizScreen
 import com.example.nextflix.ui.theme.NextFlixTheme
+import com.example.nextflix.ui.screens.BookPreferenceQuizScreen
 import com.example.nextflix.ui.viewmodel.PersonalityQuizViewModel
 
 class MainActivity : ComponentActivity() {
@@ -37,7 +38,7 @@ class MainActivity : ComponentActivity() {
                 val initialLoadDone by personalityVm.initialLoadDone.collectAsStateWithLifecycle()
                 val hasStoredProfile by personalityVm.hasStoredProfile.collectAsStateWithLifecycle()
                 var showMainApp by rememberSaveable { mutableStateOf(false) }
-                var startTab by remember { mutableStateOf(AppTab.HOME)}
+                var startTab by remember { mutableStateOf(AppTab.HOME) }
 
                 LaunchedEffect(initialLoadDone, hasStoredProfile) {
                     if (initialLoadDone && hasStoredProfile) {
@@ -129,7 +130,7 @@ fun NextFlixApp(
                 AppTab.MOVIE_QUIZ -> MoviePreferenceQuizScreen(
                     onNavigateBack = { selectedTab = AppTab.HOME }
                 )
-                AppTab.BOOK_QUIZ -> PlaceholderScreen("Book Quiz", "Coming soon!")
+                AppTab.BOOK_QUIZ -> BookPreferenceQuizScreen()
                 AppTab.RESULTS -> PlaceholderScreen("Results", "Coming soon!")
                 AppTab.FAVORITES -> PlaceholderScreen("Favorites", "Coming soon!")
             }
