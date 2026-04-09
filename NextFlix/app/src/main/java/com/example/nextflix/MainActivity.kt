@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nextflix.navigation.OnboardingNavHost
+import com.example.nextflix.navigation.ResultsNavHost
 import com.example.nextflix.ui.screens.MoviePreferenceQuizScreen
 import com.example.nextflix.ui.theme.NextFlixTheme
 import com.example.nextflix.ui.screens.BookPreferenceQuizScreen
@@ -131,7 +132,7 @@ fun NextFlixApp(
                     onNavigateBack = { selectedTab = AppTab.HOME }
                 )
                 AppTab.BOOK_QUIZ -> BookPreferenceQuizScreen()
-                AppTab.RESULTS -> PlaceholderScreen("Results", "Coming soon!")
+                AppTab.RESULTS -> ResultsNavHost()
                 AppTab.FAVORITES -> PlaceholderScreen("Favorites", "Coming soon!")
             }
         }
