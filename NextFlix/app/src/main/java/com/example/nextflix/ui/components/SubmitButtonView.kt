@@ -23,7 +23,7 @@ class SubmitButtonView @JvmOverloads constructor(
         button.setOnClickListener { listener() }
     }
 
-    fun setEnabled(enabled: Boolean) {
+    override fun setEnabled(enabled: Boolean) {
         button.isEnabled = enabled
     }
 

@@ -17,10 +17,16 @@ class RecommendationViewModel : ViewModel() {
     private val _contentFilter = MutableStateFlow(RecommendationContentType.MOVIE)
     val contentFilter: StateFlow<RecommendationContentType> = _contentFilter
 
+    // Live movie results from TMDB API
+    private val _movieResults = MutableStateFlow<List<RecommendationItem>>(emptyList())
+
     val visibleItems: StateFlow<List<RecommendationItem>> = _contentFilter
         .map { filter ->
             when (filter) {
-                RecommendationContentType.MOVIE -> SampleRecommendations.movies
+                RecommendationContentType.MOVIE -> {
+                    val live = _movieResults.value
+                    if (live.isNotEmpty()) live else SampleRecommendations.movies
+                }
                 RecommendationContentType.BOOK -> SampleRecommendations.books
             }
         }
@@ -35,6 +41,12 @@ class RecommendationViewModel : ViewModel() {
 
     fun setContentFilter(type: RecommendationContentType) {
         _contentFilter.value = type
+    }
+
+    fun setMovieResults(movies: List<RecommendationItem>) {
+        _movieResults.value = movies
+        // Refresh visible items by re-emitting the filter
+        _contentFilter.update { it }
     }
 
     fun openDetail(item: RecommendationItem) {

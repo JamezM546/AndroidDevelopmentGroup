@@ -20,7 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.util.Log
+import com.example.nextflix.data.movie.MovieRepository
 import com.example.nextflix.ui.theme.NextFlixTheme
+import com.example.nextflix.ui.viewmodel.RecommendationViewModel
 
 // Placeholder data classes for UI only
 data class MovieQuizQuestion(
@@ -33,10 +36,12 @@ data class MovieQuizQuestion(
 @Composable
 fun MoviePreferenceQuizScreen(
     onNavigateBack: () -> Unit = {},
-    onQuizComplete: () -> Unit = {}
+    onQuizComplete: () -> Unit = {},
+    recommendationViewModel: RecommendationViewModel? = null
 ) {
     // State to track selected answers
     val selectedAnswers = remember { mutableStateMapOf<Int, String>() }
+    val movieRepository = remember { MovieRepository() }
     val scrollState = rememberScrollState()
     
     // Placeholder movie quiz questions
@@ -154,7 +159,20 @@ fun MoviePreferenceQuizScreen(
             // Submit button
             AnimatedVisibility(visible = selectedAnswers.size == questions.size && questions.isNotEmpty()) {
                 Button(
-                    onClick = onQuizComplete,
+                    onClick = {
+                        movieRepository.fetchMovies(
+                            quizAnswers = selectedAnswers.toMap(),
+                            onSuccess = { movies ->
+                                val items = movies.map { movieRepository.toRecommendationItem(it) }
+                                recommendationViewModel?.setMovieResults(items)
+                                Log.d("MovieQuiz", "Loaded ${items.size} movies into results")
+                                onQuizComplete()
+                            },
+                            onFailure = { error ->
+                                Log.e("MovieQuiz", error)
+                            }
+                        )
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 24.dp)

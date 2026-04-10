@@ -28,7 +28,7 @@ class AnswerButtonView @JvmOverloads constructor(
         button.setOnClickListener { listener() }
     }
 
-    fun setSelected(selected: Boolean) {
+    override fun setSelected(selected: Boolean) {
         button.isChecked = selected
     }
 }

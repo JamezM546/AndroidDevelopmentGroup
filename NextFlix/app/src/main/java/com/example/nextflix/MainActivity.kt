@@ -27,6 +27,7 @@ import com.example.nextflix.ui.screens.MoviePreferenceQuizScreen
 import com.example.nextflix.ui.theme.NextFlixTheme
 import com.example.nextflix.ui.screens.BookPreferenceQuizScreen
 import com.example.nextflix.ui.viewmodel.PersonalityQuizViewModel
+import com.example.nextflix.ui.viewmodel.RecommendationViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,6 +94,7 @@ fun NextFlixApp(
     initialTab: AppTab = AppTab.HOME
 ) {
     var selectedTab by remember { mutableStateOf(initialTab) }
+    val recommendationVm: RecommendationViewModel = viewModel()
 
     Scaffold(
         topBar = {
@@ -129,10 +131,12 @@ fun NextFlixApp(
             when (selectedTab) {
                 AppTab.HOME -> HomeTabContent(personalityQuizViewModel = personalityQuizViewModel)
                 AppTab.MOVIE_QUIZ -> MoviePreferenceQuizScreen(
-                    onNavigateBack = { selectedTab = AppTab.HOME }
+                    onNavigateBack = { selectedTab = AppTab.HOME },
+                    onQuizComplete = { selectedTab = AppTab.RESULTS },
+                    recommendationViewModel = recommendationVm
                 )
                 AppTab.BOOK_QUIZ -> BookPreferenceQuizScreen()
-                AppTab.RESULTS -> ResultsNavHost()
+                AppTab.RESULTS -> ResultsNavHost(viewModel = recommendationVm)
                 AppTab.FAVORITES -> PlaceholderScreen("Favorites", "Coming soon!")
             }
         }
