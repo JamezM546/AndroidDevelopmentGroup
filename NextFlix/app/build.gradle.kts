@@ -91,6 +91,8 @@ dependencies {
     
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    implementation("com.google.android.material:material:1.12.0")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
