@@ -24,6 +24,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nextflix.navigation.OnboardingNavHost
 import com.example.nextflix.navigation.ResultsNavHost
 import com.example.nextflix.ui.screens.MoviePreferenceQuizScreen
+import com.example.nextflix.ui.screens.BookRecommendationsScreen
+import com.example.nextflix.ui.screens.MovieRecommendationsScreen
 import com.example.nextflix.ui.theme.NextFlixTheme
 import com.example.nextflix.ui.screens.BookPreferenceQuizScreen
 import com.example.nextflix.ui.viewmodel.PersonalityQuizViewModel
@@ -94,50 +96,73 @@ fun NextFlixApp(
     initialTab: AppTab = AppTab.HOME
 ) {
     var selectedTab by remember { mutableStateOf(initialTab) }
-    val recommendationVm: RecommendationViewModel = viewModel()
+    var showBookRecommendations by remember { mutableStateOf(false) }
+    var showMovieRecommendations by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "NextFlix",
-                        fontWeight = FontWeight.Bold
+    when {
+        showBookRecommendations -> {
+            BookRecommendationsScreen(
+                onNavigateBack = { showBookRecommendations = false },
+                onBookSelected = { book ->
+                    // Handle book selection (detail screen would go here)
+                }
+            )
+        }
+        showMovieRecommendations -> {
+            MovieRecommendationsScreen(
+                onNavigateBack = { showMovieRecommendations = false },
+                onMovieSelected = { movie ->
+                    // Handle movie selection (detail screen would go here)
+                }
+            )
+        }
+        else -> {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(
+                                text = "NextFlix",
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            )
-        },
-        bottomBar = {
-            NavigationBar {
-                AppTab.entries.forEach { tab ->
-                    NavigationBarItem(
-                        icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label) },
-                        selected = selectedTab == tab,
-                        onClick = { selectedTab = tab }
-                    )
+                bottomBar = {
+                    NavigationBar {
+                        AppTab.entries.forEach { tab ->
+                            NavigationBarItem(
+                                icon = { Icon(tab.icon, contentDescription = tab.label) },
+                                label = { Text(tab.label) },
+                                selected = selectedTab == tab,
+                                onClick = { selectedTab = tab }
+                            )
+                        }
+                    }
                 }
-            }
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when (selectedTab) {
-                AppTab.HOME -> HomeTabContent(personalityQuizViewModel = personalityQuizViewModel)
-                AppTab.MOVIE_QUIZ -> MoviePreferenceQuizScreen(
-                    onNavigateBack = { selectedTab = AppTab.HOME },
-                    onQuizComplete = { selectedTab = AppTab.RESULTS },
-                    recommendationViewModel = recommendationVm
-                )
-                AppTab.BOOK_QUIZ -> BookPreferenceQuizScreen()
-                AppTab.RESULTS -> ResultsNavHost(viewModel = recommendationVm)
-                AppTab.FAVORITES -> PlaceholderScreen("Favorites", "Coming soon!")
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+                    when (selectedTab) {
+                        AppTab.HOME -> HomeTabContent(personalityQuizViewModel = personalityQuizViewModel)
+                        AppTab.MOVIE_QUIZ -> MoviePreferenceQuizScreen(
+                            onNavigateBack = { selectedTab = AppTab.HOME },
+                            onQuizComplete = { showMovieRecommendations = true }
+                        )
+                        AppTab.BOOK_QUIZ -> BookPreferenceQuizScreen(
+                            onNavigateBack = { selectedTab = AppTab.HOME },
+                            onQuizComplete = { showBookRecommendations = true }
+                        )
+                        AppTab.RESULTS -> PlaceholderScreen("Results", "Coming soon!")
+                        AppTab.FAVORITES -> PlaceholderScreen("Favorites", "Coming soon!")
+                    }
+                }
             }
         }
     }

@@ -20,16 +20,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.util.Log
-import com.example.nextflix.data.movie.MovieRepository
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nextflix.ui.theme.NextFlixTheme
-import com.example.nextflix.ui.viewmodel.RecommendationViewModel
+import com.example.nextflix.ui.viewmodel.MovieQuizViewModel
+import kotlinx.coroutines.launch
 
-// Placeholder data classes for UI only
 data class MovieQuizQuestion(
     val id: Int,
     val question: String,
-    val options: List<String>
+    val options: List<String>,
+    val fieldSetter: (String) -> Unit
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,47 +38,69 @@ data class MovieQuizQuestion(
 fun MoviePreferenceQuizScreen(
     onNavigateBack: () -> Unit = {},
     onQuizComplete: () -> Unit = {},
-    recommendationViewModel: RecommendationViewModel? = null
+    viewModel: MovieQuizViewModel = viewModel()
 ) {
-    // State to track selected answers
-    val selectedAnswers = remember { mutableStateMapOf<Int, String>() }
-    val movieRepository = remember { MovieRepository() }
-    val scrollState = rememberScrollState()
+    val genre by viewModel.genre.collectAsStateWithLifecycle()
+    val duration by viewModel.duration.collectAsStateWithLifecycle()
+    val era by viewModel.era.collectAsStateWithLifecycle()
+    val ending by viewModel.ending.collectAsStateWithLifecycle()
+    val specialEffects by viewModel.specialEffects.collectAsStateWithLifecycle()
+    val setting by viewModel.setting.collectAsStateWithLifecycle()
+    val validationError by viewModel.validationError.collectAsStateWithLifecycle()
     
-    // Placeholder movie quiz questions
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    
     val questions = remember {
         listOf(
             MovieQuizQuestion(
                 id = 1,
                 question = "What's your favorite movie genre?",
-                options = listOf("Action", "Comedy", "Drama", "Sci-Fi", "Horror", "Romance")
+                options = listOf("Action", "Comedy", "Drama", "Sci-Fi", "Horror", "Romance"),
+                fieldSetter = viewModel::setGenre
             ),
             MovieQuizQuestion(
                 id = 2,
                 question = "How long do you prefer movies to be?",
-                options = listOf("Short (< 90 min)", "Medium (90-120 min)", "Long (> 120 min)", "No preference")
+                options = listOf("Short (< 90 min)", "Medium (90-120 min)", "Long (> 120 min)", "No preference"),
+                fieldSetter = viewModel::setDuration
             ),
             MovieQuizQuestion(
                 id = 3,
                 question = "What movie era do you enjoy most?",
-                options = listOf("Classic (before 1980)", "Golden Age (1980-2000)", "Modern (2000-2015)", "Recent (2015+)")
+                options = listOf("Classic (before 1980)", "Golden Age (1980-2000)", "Modern (2000-2015)", "Recent (2015+)"),
+                fieldSetter = viewModel::setEra
             ),
             MovieQuizQuestion(
                 id = 4,
                 question = "Do you prefer movies with happy or sad endings?",
-                options = listOf("Happy endings", "Sad/bittersweet endings", "Unexpected twists", "No preference")
+                options = listOf("Happy endings", "Sad/bittersweet endings", "Unexpected twists", "No preference"),
+                fieldSetter = viewModel::setEnding
             ),
             MovieQuizQuestion(
                 id = 5,
                 question = "How important are special effects to you?",
-                options = listOf("Very important", "Somewhat important", "Not important", "Depends on the movie")
+                options = listOf("Very important", "Somewhat important", "Not important", "Depends on the movie"),
+                fieldSetter = viewModel::setSpecialEffects
             ),
             MovieQuizQuestion(
                 id = 6,
                 question = "What's your ideal movie setting?",
-                options = listOf("Real world", "Fantasy world", "Future/Space", "Historical period", "Anywhere interesting")
+                options = listOf("Real world", "Fantasy world", "Future/Space", "Historical period", "Anywhere interesting"),
+                fieldSetter = viewModel::setSetting
             )
         )
+    }
+    
+    val selectedAnswers = remember {
+        mutableStateMapOf<Int, String>().apply {
+            if (genre.isNotBlank()) this[1] = genre
+            if (duration.isNotBlank()) this[2] = duration
+            if (era.isNotBlank()) this[3] = era
+            if (ending.isNotBlank()) this[4] = ending
+            if (specialEffects.isNotBlank()) this[5] = specialEffects
+            if (setting.isNotBlank()) this[6] = setting
+        }
     }
     
     Scaffold(
@@ -122,7 +145,6 @@ fun MoviePreferenceQuizScreen(
                 .padding(paddingValues)
                 .verticalScroll(scrollState)
         ) {
-            // Progress indicator
             LinearProgressIndicator(
                 progress = { if (questions.isEmpty()) 0f else selectedAnswers.size.toFloat() / questions.size },
                 modifier = Modifier
@@ -134,7 +156,6 @@ fun MoviePreferenceQuizScreen(
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
             )
             
-            // Progress text
             Text(
                 text = "${selectedAnswers.size} of ${questions.size} questions answered",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -144,34 +165,47 @@ fun MoviePreferenceQuizScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Questions
             questions.forEach { question ->
                 MovieQuestionCard(
                     question = question,
                     selectedAnswer = selectedAnswers[question.id],
                     onAnswerSelected = { answer ->
                         selectedAnswers[question.id] = answer
+                        question.fieldSetter(answer)
                     }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
             
-            // Submit button
+            if (validationError.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = validationError,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(16.dp),
+                        fontSize = 14.sp
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            
             AnimatedVisibility(visible = selectedAnswers.size == questions.size && questions.isNotEmpty()) {
                 Button(
                     onClick = {
-                        movieRepository.fetchMovies(
-                            quizAnswers = selectedAnswers.toMap(),
-                            onSuccess = { movies ->
-                                val items = movies.map { movieRepository.toRecommendationItem(it) }
-                                recommendationViewModel?.setMovieResults(items)
-                                Log.d("MovieQuiz", "Loaded ${items.size} movies into results")
+                        scope.launch {
+                            viewModel.submitQuiz()
+                            if (validationError.isEmpty()) {
                                 onQuizComplete()
-                            },
-                            onFailure = { error ->
-                                Log.e("MovieQuiz", error)
                             }
-                        )
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -190,7 +224,6 @@ fun MoviePreferenceQuizScreen(
                 }
             }
             
-            // Spacer at bottom
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -217,7 +250,6 @@ fun MovieQuestionCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // Question number badge
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.primaryContainer,
@@ -232,7 +264,6 @@ fun MovieQuestionCard(
                 )
             }
             
-            // Question text
             Text(
                 text = question.question,
                 fontSize = 18.sp,
@@ -241,7 +272,6 @@ fun MovieQuestionCard(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
             
-            // Answer options
             question.options.forEachIndexed { index, option ->
                 MovieAnswerOption(
                     text = option,
