@@ -22,12 +22,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nextflix.navigation.OnboardingNavHost
+import com.example.nextflix.navigation.ResultsNavHost
 import com.example.nextflix.ui.screens.MoviePreferenceQuizScreen
 import com.example.nextflix.ui.screens.BookRecommendationsScreen
 import com.example.nextflix.ui.screens.MovieRecommendationsScreen
 import com.example.nextflix.ui.theme.NextFlixTheme
 import com.example.nextflix.ui.screens.BookPreferenceQuizScreen
 import com.example.nextflix.ui.viewmodel.PersonalityQuizViewModel
+import com.example.nextflix.ui.viewmodel.RecommendationViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
