@@ -24,4 +24,13 @@ class QuestionCardView @JvmOverloads constructor(
     fun setQuestion(text: String) {
         textView.text = text
     }
+
+    fun setError(hasError: Boolean) {
+        strokeColor = if (hasError) {
+            context.getColor(com.google.android.material.R.color.design_error)
+        } else {
+            context.getColor(android.R.color.transparent)
+        }
+        strokeWidth = if (hasError) 4 else 0
+    }
 }

@@ -104,7 +104,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     implementation("com.google.android.material:material:1.12.0")
-    
+    implementation("androidx.privacysandbox.tools:tools-core:1.0.0-alpha14")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
