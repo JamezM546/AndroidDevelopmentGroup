@@ -140,11 +140,30 @@ In this milestone, we worked on the following issues:
 
 [Add screenshot of your Project Board with the updated status of issues for Milestone 3. Note that these should include the updated issues you worked on for this sprint and not be a duplicate of Milestone 2 Project board.] <img src="YOUR_WIREFRAME_IMAGE_URL" width=600>
 
+Here are the closed sprint 2 issues
+![image alt](https://github.com/CS388FinalProject/AndroidDevelopmentGroup/blob/b5d535db66d3666750f9cac9b6979f14353a30f4/images/milestone3issues.png)
+
+Here are the issues that are still open:
+![image alt](https://github.com/CS388FinalProject/AndroidDevelopmentGroup/blob/b5d535db66d3666750f9cac9b6979f14353a30f4/images/milestone3issuesopen.png)
 ## Completed user stories
 
-- List the completed user stories from this unit
-- List any pending user stories / any user stories you decided to cut
-from the original requirements
+- Issue 8: Add personality answer state management
+- Issue 9: Define personality-to-preference mapping rules
+- Issue 10: Integrate personality data into recommendation input
+- Issue 11: Build movie API integration
+- Issue 12: Create movie recommendation filtering/ranking logic
+- Issue 13: Add movie quiz state model and validation
+- Issue 14: Build book API or dataset integration
+- Issue 15: Create book recommendation filtering/ranking logic
+- Issue 16: Define shared data models for movie and book results
+- Issue 17: Build shared Recommendation Results screen
+- Issue 18: Build reusable movie and book result cards
+- Issue 19: Add navigation from results to detail screen
+- Issue 20: Add validation behavior to personality, movie, and book quizzes
+- Issue 21: Add loading and error handling to recommendation flow
+- Issue 22: Add empty-state handling to results screen
+- Pending user stories: None
+- User stories cut from original requirements: None
 
 [Add video/gif of your current application that shows build progress]
 <img src="YOUR_WIREFRAME_IMAGE_URL" width=600>
