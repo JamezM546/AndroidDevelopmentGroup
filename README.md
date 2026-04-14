@@ -138,7 +138,7 @@ In this milestone, we worked on the following issues:
 
 ## GitHub Project board
 
-[Add screenshot of your Project Board with the updated status of issues for Milestone 3. Note that these should include the updated issues you worked on for this sprint and not be a duplicate of Milestone 2 Project board.] <img src="YOUR_WIREFRAME_IMAGE_URL" width=600>
+[Add screenshot of your Project Board with the updated status of issues for Milestone 3. Note that these should include the updated issues you worked on for this sprint and not be a duplicate of Milestone 2 Project board.]
 
 Here are the closed sprint 2 issues
 ![image alt](images/milestone3issues.png)
@@ -167,8 +167,9 @@ Here are the issues that are still open:
 - User stories cut from original requirements: None
 
 [Add video/gif of your current application that shows build progress]
-<img src="YOUR_WIREFRAME_IMAGE_URL" width=600>
+![Milestone 3 Demo](images/ms3.gif)
 
 ## App Demo Video
 
 - Embed the YouTube/Vimeo link of your Completed Demo Day prep video
+- [Demo Video](https://youtu.be/a8kjrN5mKHs?si=rWKVI7TFX9jC0Yal)

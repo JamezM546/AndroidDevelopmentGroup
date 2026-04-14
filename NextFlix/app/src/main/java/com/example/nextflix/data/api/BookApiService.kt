@@ -95,6 +95,7 @@ class BookApiService {
                     val pageCount = volumeInfo.optInt("pageCount", 0)
                     val imageLinks = volumeInfo.optJSONObject("imageLinks")
                     val thumbnailUrl = imageLinks?.optString("thumbnail", null)
+                        ?.replace("http://", "https://")
                     
                     val book = Book(
                         id = id,

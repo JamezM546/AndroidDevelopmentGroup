@@ -15,6 +15,7 @@ if (localPropertiesFile.exists()) {
     localProperties.load(FileInputStream(localPropertiesFile))
 }
 
+val tmdbKey = localProperties.getProperty("TMDB_API_KEY", "").ifEmpty { "default-key" }
 val geminiKey = localProperties.getProperty("GEMINI_API_KEY", "").ifEmpty { "default-key" }
 val omdbKey = localProperties.getProperty("OMDB_API_KEY", "").ifEmpty { "default-key" }
 val booksKey = localProperties.getProperty("GOOGLE_BOOKS_API_KEY", "").ifEmpty { "default-key" }
@@ -33,6 +34,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         // Add buildConfigField for API keys from local.properties
+        buildConfigField("String", "TMDB_API_KEY", "\"$tmdbKey\"")
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
         buildConfigField("String", "OMDB_API_KEY", "\"$omdbKey\"")
         buildConfigField("String", "GOOGLE_BOOKS_API_KEY", "\"$booksKey\"")

@@ -53,29 +53,46 @@ class MovieRecommendationViewModel(
                     return@launch
                 }
 
-                // Build search query from available inputs.
-                val searchQuery = listOf(movieQuiz.genre, movieQuiz.era)
-                    .filter { it.isNotBlank() }
-                    .joinToString(" ")
-                    .ifBlank { "popular movies" }
-                var availableMovies = movieApiService.searchMovies(searchQuery, maxResults = 20).getOrNull() ?: emptyList()
-                
-                // If no results with combined query, try just genre
+                // Use genre-specific search terms so OMDB returns relevant movies
+                // (OMDB searches by title, not genre, so "Comedy" returns "The King of Comedy")
+                val genreSearchTerms = mapOf(
+                    "Action" to listOf("mission impossible", "john wick", "mad max", "die hard", "gladiator"),
+                    "Comedy" to listOf("superbad", "mean girls", "step brothers", "anchorman", "bridesmaids"),
+                    "Drama" to listOf("shawshank", "forrest gump", "green mile", "schindler", "beautiful mind"),
+                    "Sci-Fi" to listOf("interstellar", "inception", "blade runner", "the matrix", "arrival"),
+                    "Horror" to listOf("conjuring", "hereditary", "get out", "scream", "midsommar"),
+                    "Romance" to listOf("pride prejudice", "when harry met sally", "la la land", "before sunrise", "crazy rich")
+                )
+
+                val searchTerms = genreSearchTerms[movieQuiz.genre] ?: listOf("popular")
+                val allMovies = mutableListOf<Movie>()
+                for (term in searchTerms) {
+                    val results = movieApiService.searchMovies(term, maxResults = 2).getOrNull() ?: emptyList()
+                    allMovies.addAll(results)
+                }
+                // Deduplicate by ID
+                var availableMovies = allMovies.distinctBy { it.id }.take(10)
+
+                // Fallback if nothing came back
                 if (availableMovies.isEmpty()) {
-                    Log.d("MovieRecommendationVM", "No results for '$searchQuery', trying genre only")
-                    availableMovies = movieApiService.searchMovies(movieQuiz.genre, maxResults = 20).getOrNull() ?: emptyList()
+                    Log.d("MovieRecommendationVM", "No results from genre searches, trying generic")
+                    availableMovies = movieApiService.searchMovies("popular", maxResults = 10).getOrNull() ?: emptyList()
                 }
-                
-                // If still no results, try era
-                if (availableMovies.isEmpty() && movieQuiz.era.isNotBlank()) {
-                    Log.d("MovieRecommendationVM", "No results for genre, trying era")
-                    availableMovies = movieApiService.searchMovies(movieQuiz.era, maxResults = 20).getOrNull() ?: emptyList()
-                }
-                
+
                 // If still no results, use some popular movies as fallback
                 if (availableMovies.isEmpty()) {
                     Log.d("MovieRecommendationVM", "No results from API, using fallback popular movies")
                     availableMovies = getFallbackMovies()
+                }
+
+                // Fetch full details (description, rating, genre) for each movie
+                availableMovies = availableMovies.mapNotNull { movie ->
+                    try {
+                        movieApiService.getMovieDetails(movie.id).getOrNull()
+                    } catch (e: Exception) {
+                        Log.w("MovieRecommendationVM", "Failed to get details for ${movie.title}", e)
+                        movie
+                    }
                 }
 
                 if (availableMovies.isEmpty()) {
