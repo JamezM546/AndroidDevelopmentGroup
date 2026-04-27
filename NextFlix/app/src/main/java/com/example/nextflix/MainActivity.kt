@@ -121,6 +121,11 @@ fun NextFlixApp(
     val bookResults by bookRecommendationViewModel.recommendations.collectAsStateWithLifecycle()
     val personalityChanged by personalityQuizViewModel.personalityChangedSinceLastRecs.collectAsStateWithLifecycle()
     val dislikedIds by reactionViewModel.dislikedIds.collectAsStateWithLifecycle()
+    val savedMovies by movieRecommendationViewModel.savedMovies.collectAsStateWithLifecycle()
+    val savedBooks by bookRecommendationViewModel.savedBooks.collectAsStateWithLifecycle()
+    val savedIds = remember(savedMovies, savedBooks) {
+        savedMovies.map { it.id }.toSet() + savedBooks.map { it.id }.toSet()
+    }
 
     LaunchedEffect(movieResults, bookResults) {
         resultsViewModel.setMovieResults(movieResults.map { it.toRecommendationItem() })
@@ -283,7 +288,28 @@ fun NextFlixApp(
                             viewModel = resultsViewModel,
                             reactionViewModel = reactionViewModel,
                             personalityChanged = personalityChanged,
-                            onReact = { item, reaction -> handleReact(item, reaction) }
+                            onReact = { item, reaction -> handleReact(item, reaction) },
+                            savedIds = savedIds,
+                            onSaveToggle = { item ->
+                                when (item.contentType) {
+                                    RecommendationContentType.MOVIE -> {
+                                        if (movieRecommendationViewModel.isMovieSaved(item.id)) {
+                                            movieRecommendationViewModel.unsaveMovie(item.id)
+                                        } else {
+                                            val movie = movieResults.firstOrNull { it.id == item.id }
+                                            if (movie != null) movieRecommendationViewModel.saveMovie(movie)
+                                        }
+                                    }
+                                    RecommendationContentType.BOOK -> {
+                                        if (bookRecommendationViewModel.isBookSaved(item.id)) {
+                                            bookRecommendationViewModel.unsaveBook(item.id)
+                                        } else {
+                                            val book = bookResults.firstOrNull { it.id == item.id }
+                                            if (book != null) bookRecommendationViewModel.saveBook(book)
+                                        }
+                                    }
+                                }
+                            }
                         )
                         AppTab.FAVORITES -> FavoritesScreen(
                             movieViewModel = movieRecommendationViewModel,
