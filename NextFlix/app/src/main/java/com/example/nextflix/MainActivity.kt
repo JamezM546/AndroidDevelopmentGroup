@@ -26,6 +26,7 @@ import com.example.nextflix.navigation.ResultsNavHost
 import com.example.nextflix.data.models.Book
 import com.example.nextflix.data.models.Movie
 import com.example.nextflix.ui.screens.BookDetailScreen
+import com.example.nextflix.ui.screens.FavoritesScreen
 import com.example.nextflix.ui.screens.MoviePreferenceQuizScreen
 import com.example.nextflix.ui.screens.BookRecommendationsScreen
 import com.example.nextflix.ui.screens.MovieDetailScreen
@@ -120,7 +121,7 @@ fun NextFlixApp(
                             bookRecommendationViewModel.unsaveBook(book.id)
                             selectedBook = book.copy(isSaved = false)
                         } else {
-                            bookRecommendationViewModel.saveBook(book.id)
+                            bookRecommendationViewModel.saveBook(book)
                             selectedBook = book.copy(isSaved = true)
                         }
                     }
@@ -137,7 +138,7 @@ fun NextFlixApp(
                             movieRecommendationViewModel.unsaveMovie(movie.id)
                             selectedMovie = movie.copy(isSaved = false)
                         } else {
-                            movieRecommendationViewModel.saveMovie(movie.id)
+                            movieRecommendationViewModel.saveMovie(movie)
                             selectedMovie = movie.copy(isSaved = true)
                         }
                     }
@@ -163,7 +164,7 @@ fun NextFlixApp(
                     if (movieRecommendationViewModel.isMovieSaved(movie.id)) {
                         movieRecommendationViewModel.unsaveMovie(movie.id)
                     } else {
-                        movieRecommendationViewModel.saveMovie(movie.id)
+                        movieRecommendationViewModel.saveMovie(movie)
                     }
                 },
                 viewModel = movieRecommendationViewModel
@@ -213,7 +214,16 @@ fun NextFlixApp(
                             onQuizComplete = { showBookRecommendations = true }
                         )
                         AppTab.RESULTS -> PlaceholderScreen("Results", "Coming soon!")
-                        AppTab.FAVORITES -> PlaceholderScreen("Favorites", "Coming soon!")
+                        AppTab.FAVORITES -> FavoritesScreen(
+                            movieViewModel = movieRecommendationViewModel,
+                            bookViewModel = bookRecommendationViewModel,
+                            onMovieSelected = { movie ->
+                                selectedMovie = movie.copy(isSaved = movieRecommendationViewModel.isMovieSaved(movie.id))
+                            },
+                            onBookSelected = { book ->
+                                selectedBook = book.copy(isSaved = bookRecommendationViewModel.isBookSaved(book.id))
+                            }
+                        )
                     }
                 }
             }

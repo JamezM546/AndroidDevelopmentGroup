@@ -10,9 +10,11 @@ import com.example.nextflix.data.models.Book
 import com.example.nextflix.data.models.BookRecommendation
 import com.example.nextflix.data.personality.PersonalityQuizStore
 import com.example.nextflix.data.quiz.BookQuizStore
+import com.example.nextflix.data.saved.SavedBooksStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -24,6 +26,7 @@ class BookRecommendationViewModel(
     private val recommendationService = RecommendationService()
     private val bookQuizStore = BookQuizStore(application)
     private val personalityQuizStore = PersonalityQuizStore(application)
+    private val savedBooksStore = SavedBooksStore(application)
 
     private val _recommendations = MutableStateFlow<List<Book>>(emptyList())
     val recommendations: StateFlow<List<Book>> = _recommendations.asStateFlow()
@@ -36,8 +39,24 @@ class BookRecommendationViewModel(
 
     private val _generatedRecommendation = MutableStateFlow<BookRecommendation?>(null)
     val generatedRecommendation: StateFlow<BookRecommendation?> = _generatedRecommendation.asStateFlow()
-    private val _savedBookIds = MutableStateFlow<Set<String>>(emptySet())
-    val savedBookIds: StateFlow<Set<String>> = _savedBookIds.asStateFlow()
+    private val _savedBooks = MutableStateFlow<List<Book>>(emptyList())
+    val savedBooks: StateFlow<List<Book>> = _savedBooks.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val persisted = savedBooksStore.read()
+            if (persisted.isNotEmpty()) {
+                _savedBooks.value = persisted
+                val savedIds = persisted.map { it.id }.toSet()
+                _recommendations.update { current ->
+                    current.map { b ->
+                        if (b.id in savedIds && !b.isSaved) b.copy(isSaved = true) else b
+                    }
+                }
+            }
+            _savedBooks.drop(1).collect { savedBooksStore.write(it) }
+        }
+    }
 
     fun generateRecommendations() {
         viewModelScope.launch {
@@ -77,7 +96,7 @@ class BookRecommendationViewModel(
                 )
 
                 val rankedBooks = recommendationResult.getOrNull() ?: emptyList()
-                val savedIds = _savedBookIds.value
+                val savedIds = _savedBooks.value.map { it.id }.toSet()
                 _recommendations.value = rankedBooks.map { book ->
                     book.copy(isSaved = book.id in savedIds)
                 }
@@ -100,25 +119,29 @@ class BookRecommendationViewModel(
         }
     }
 
-    fun saveBook(bookId: String) {
-        _savedBookIds.update { current -> current + bookId }
+    fun saveBook(book: Book) {
+        _savedBooks.update { current ->
+            if (current.any { it.id == book.id }) current
+            else current + book.copy(isSaved = true)
+        }
         _recommendations.update { books ->
-            books.map { book ->
-                if (book.id == bookId) book.copy(isSaved = true) else book
+            books.map { b ->
+                if (b.id == book.id) b.copy(isSaved = true) else b
             }
         }
     }
 
     fun unsaveBook(bookId: String) {
-        _savedBookIds.update { current -> current - bookId }
+        _savedBooks.update { current -> current.filterNot { it.id == bookId } }
         _recommendations.update { books ->
-            books.map { book ->
-                if (book.id == bookId) book.copy(isSaved = false) else book
+            books.map { b ->
+                if (b.id == bookId) b.copy(isSaved = false) else b
             }
         }
     }
 
-    fun isBookSaved(bookId: String): Boolean = bookId in _savedBookIds.value
+    fun isBookSaved(bookId: String): Boolean =
+        _savedBooks.value.any { it.id == bookId }
 
     companion object {
         private const val TAG = "BookRecommendationVM"
