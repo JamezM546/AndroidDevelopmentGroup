@@ -1,0 +1,16 @@
+# Android Studio / IntelliJ local IDE state — never commit
+.idea/workspace.xml
+.idea/deploymentTargetSelector.xml
+.idea/deploymentTargetDropDown.xml
+.idea/caches/
+.idea/libraries/
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Backup / temp files
+*.bak
+*.orig

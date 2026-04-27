@@ -25,6 +25,7 @@ import com.example.nextflix.navigation.OnboardingNavHost
 import com.example.nextflix.navigation.ResultsNavHost
 import com.example.nextflix.data.models.Book
 import com.example.nextflix.data.models.Movie
+import com.example.nextflix.data.reaction.Reaction
 import com.example.nextflix.data.recommendation.RecommendationContentType
 import com.example.nextflix.data.recommendation.RecommendationItem
 import com.example.nextflix.ui.screens.BookDetailScreen
@@ -33,11 +34,13 @@ import com.example.nextflix.ui.screens.MoviePreferenceQuizScreen
 import com.example.nextflix.ui.screens.BookRecommendationsScreen
 import com.example.nextflix.ui.screens.MovieDetailScreen
 import com.example.nextflix.ui.screens.MovieRecommendationsScreen
+import com.example.nextflix.ui.screens.PersonalityQuizScreen
 import com.example.nextflix.ui.theme.NextFlixTheme
 import com.example.nextflix.ui.screens.BookPreferenceQuizScreen
 import com.example.nextflix.ui.viewmodel.BookRecommendationViewModel
 import com.example.nextflix.ui.viewmodel.MovieRecommendationViewModel
 import com.example.nextflix.ui.viewmodel.PersonalityQuizViewModel
+import com.example.nextflix.ui.viewmodel.ReactionViewModel
 import com.example.nextflix.ui.viewmodel.RecommendationViewModel
 
 class MainActivity : ComponentActivity() {
@@ -107,51 +110,95 @@ fun NextFlixApp(
     var selectedTab by remember { mutableStateOf(initialTab) }
     var showBookRecommendations by remember { mutableStateOf(false) }
     var showMovieRecommendations by remember { mutableStateOf(false) }
+    var showRetakeQuiz by remember { mutableStateOf(false) }
     var selectedBook by remember { mutableStateOf<Book?>(null) }
     var selectedMovie by remember { mutableStateOf<Movie?>(null) }
     val movieRecommendationViewModel: MovieRecommendationViewModel = viewModel()
     val bookRecommendationViewModel: BookRecommendationViewModel = viewModel()
     val resultsViewModel: RecommendationViewModel = viewModel()
+    val reactionViewModel: ReactionViewModel = viewModel()
     val movieResults by movieRecommendationViewModel.recommendations.collectAsStateWithLifecycle()
     val bookResults by bookRecommendationViewModel.recommendations.collectAsStateWithLifecycle()
+    val personalityChanged by personalityQuizViewModel.personalityChangedSinceLastRecs.collectAsStateWithLifecycle()
+    val dislikedIds by reactionViewModel.dislikedIds.collectAsStateWithLifecycle()
 
     LaunchedEffect(movieResults, bookResults) {
         resultsViewModel.setMovieResults(movieResults.map { it.toRecommendationItem() })
         resultsViewModel.setBookResults(bookResults.map { it.toRecommendationItem() })
     }
 
+    LaunchedEffect(dislikedIds) {
+        resultsViewModel.setDislikedIds(dislikedIds)
+    }
+
+    fun handleReact(item: RecommendationItem, reaction: Reaction?) {
+        val descriptor = item.summary.take(40)
+        reactionViewModel.react(
+            id = item.id,
+            contentType = item.contentType,
+            title = item.title,
+            descriptor = descriptor,
+            reaction = reaction
+        )
+    }
+
     when {
+        showRetakeQuiz -> {
+            PersonalityQuizScreen(
+                viewModel = personalityQuizViewModel,
+                onBack = { showRetakeQuiz = false },
+                onSubmitSuccess = { showRetakeQuiz = false }
+            )
+        }
         selectedBook != null -> {
+            val book = selectedBook!!
             BookDetailScreen(
-                book = selectedBook!!,
+                book = book,
                 onBack = { selectedBook = null },
                 onSaveToggle = {
-                    selectedBook?.let { book ->
-                        if (bookRecommendationViewModel.isBookSaved(book.id)) {
-                            bookRecommendationViewModel.unsaveBook(book.id)
-                            selectedBook = book.copy(isSaved = false)
-                        } else {
-                            bookRecommendationViewModel.saveBook(book)
-                            selectedBook = book.copy(isSaved = true)
-                        }
+                    if (bookRecommendationViewModel.isBookSaved(book.id)) {
+                        bookRecommendationViewModel.unsaveBook(book.id)
+                        selectedBook = book.copy(isSaved = false)
+                    } else {
+                        bookRecommendationViewModel.saveBook(book)
+                        selectedBook = book.copy(isSaved = true)
                     }
+                },
+                currentReaction = reactionViewModel.reactionFor(book.id),
+                onReact = { reaction ->
+                    reactionViewModel.react(
+                        id = book.id,
+                        contentType = RecommendationContentType.BOOK,
+                        title = book.title,
+                        descriptor = book.author.ifBlank { book.genres.firstOrNull() ?: "" },
+                        reaction = reaction
+                    )
                 }
             )
         }
         selectedMovie != null -> {
+            val movie = selectedMovie!!
             MovieDetailScreen(
-                movie = selectedMovie!!,
+                movie = movie,
                 onBack = { selectedMovie = null },
                 onSaveToggle = {
-                    selectedMovie?.let { movie ->
-                        if (movieRecommendationViewModel.isMovieSaved(movie.id)) {
-                            movieRecommendationViewModel.unsaveMovie(movie.id)
-                            selectedMovie = movie.copy(isSaved = false)
-                        } else {
-                            movieRecommendationViewModel.saveMovie(movie)
-                            selectedMovie = movie.copy(isSaved = true)
-                        }
+                    if (movieRecommendationViewModel.isMovieSaved(movie.id)) {
+                        movieRecommendationViewModel.unsaveMovie(movie.id)
+                        selectedMovie = movie.copy(isSaved = false)
+                    } else {
+                        movieRecommendationViewModel.saveMovie(movie)
+                        selectedMovie = movie.copy(isSaved = true)
                     }
+                },
+                currentReaction = reactionViewModel.reactionFor(movie.id),
+                onReact = { reaction ->
+                    reactionViewModel.react(
+                        id = movie.id,
+                        contentType = RecommendationContentType.MOVIE,
+                        title = movie.title,
+                        descriptor = movie.genre.joinToString(", "),
+                        reaction = reaction
+                    )
                 }
             )
         }
@@ -214,16 +261,30 @@ fun NextFlixApp(
                         .padding(paddingValues)
                 ) {
                     when (selectedTab) {
-                        AppTab.HOME -> HomeTabContent(personalityQuizViewModel = personalityQuizViewModel)
+                        AppTab.HOME -> HomeTabContent(
+                            personalityQuizViewModel = personalityQuizViewModel,
+                            onRetakeQuiz = { showRetakeQuiz = true }
+                        )
                         AppTab.MOVIE_QUIZ -> MoviePreferenceQuizScreen(
                             onNavigateBack = { selectedTab = AppTab.HOME },
-                            onQuizComplete = { showMovieRecommendations = true }
+                            onQuizComplete = {
+                                movieRecommendationViewModel.resetForNewGeneration()
+                                showMovieRecommendations = true
+                            }
                         )
                         AppTab.BOOK_QUIZ -> BookPreferenceQuizScreen(
                             onNavigateBack = { selectedTab = AppTab.HOME },
-                            onQuizComplete = { showBookRecommendations = true }
+                            onQuizComplete = {
+                                bookRecommendationViewModel.resetForNewGeneration()
+                                showBookRecommendations = true
+                            }
                         )
-                        AppTab.RESULTS -> ResultsNavHost(viewModel = resultsViewModel)
+                        AppTab.RESULTS -> ResultsNavHost(
+                            viewModel = resultsViewModel,
+                            reactionViewModel = reactionViewModel,
+                            personalityChanged = personalityChanged,
+                            onReact = { item, reaction -> handleReact(item, reaction) }
+                        )
                         AppTab.FAVORITES -> FavoritesScreen(
                             movieViewModel = movieRecommendationViewModel,
                             bookViewModel = bookRecommendationViewModel,
@@ -243,7 +304,8 @@ fun NextFlixApp(
 
 @Composable
 fun HomeTabContent(
-    personalityQuizViewModel: PersonalityQuizViewModel
+    personalityQuizViewModel: PersonalityQuizViewModel,
+    onRetakeQuiz: () -> Unit = {}
 ) {
     val quizResult by personalityQuizViewModel.lastResult.collectAsStateWithLifecycle()
     Column(
@@ -278,6 +340,10 @@ fun HomeTabContent(
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium
             )
+            Spacer(modifier = Modifier.height(12.dp))
+            androidx.compose.material3.OutlinedButton(onClick = onRetakeQuiz) {
+                Text("Retake personality quiz")
+            }
         }
     }
 }

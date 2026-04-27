@@ -1,5 +1,8 @@
 package com.example.nextflix.data.recommendation
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class RecommendationContentType {
     MOVIE,
     BOOK

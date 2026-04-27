@@ -10,6 +10,11 @@ import com.example.nextflix.data.models.Movie
 import com.example.nextflix.data.models.MovieRecommendation
 import com.example.nextflix.data.personality.PersonalityQuizStore
 import com.example.nextflix.data.quiz.MovieQuizStore
+import com.example.nextflix.data.reaction.ReactionContext
+import com.example.nextflix.data.reaction.ReactionEntry
+import com.example.nextflix.data.reaction.ReactionStore
+import com.example.nextflix.data.recommendation.RecommendationContentType
+import com.example.nextflix.data.recommendation.RecommendationResultsStore
 import com.example.nextflix.data.saved.SavedMoviesStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,12 +32,16 @@ class MovieRecommendationViewModel(
     private val movieQuizStore = MovieQuizStore(application)
     private val personalityQuizStore = PersonalityQuizStore(application)
     private val savedMoviesStore = SavedMoviesStore(application)
+    private val resultsStore = RecommendationResultsStore(application)
+    private val reactionStore = ReactionStore(application)
 
     private val _recommendations = MutableStateFlow<List<Movie>>(emptyList())
     val recommendations: StateFlow<List<Movie>> = _recommendations.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private var hasTriggeredGeneration = false
 
     private val _error = MutableStateFlow("")
     val error: StateFlow<String> = _error.asStateFlow()
@@ -47,11 +56,12 @@ class MovieRecommendationViewModel(
             val persisted = savedMoviesStore.read()
             if (persisted.isNotEmpty()) {
                 _savedMovies.value = persisted
-                val savedIds = persisted.map { it.id }.toSet()
-                _recommendations.update { current ->
-                    current.map { m ->
-                        if (m.id in savedIds && !m.isSaved) m.copy(isSaved = true) else m
-                    }
+            }
+            val savedIds = _savedMovies.value.map { it.id }.toSet()
+            val persistedRecs = resultsStore.readMovies()
+            if (persistedRecs.isNotEmpty()) {
+                _recommendations.value = persistedRecs.map { m ->
+                    m.copy(isSaved = m.id in savedIds)
                 }
             }
             _savedMovies.drop(1).collect { savedMoviesStore.write(it) }
@@ -59,6 +69,8 @@ class MovieRecommendationViewModel(
     }
 
     fun generateRecommendations() {
+        if (hasTriggeredGeneration) return
+        hasTriggeredGeneration = true
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = ""
@@ -74,25 +86,36 @@ class MovieRecommendationViewModel(
                     return@launch
                 }
 
-                // Use genre-specific search terms so OMDB returns relevant movies
-                // (OMDB searches by title, not genre, so "Comedy" returns "The King of Comedy")
+                // OMDB searches by title so we use known titles as proxies for genre/setting.
+                // Setting terms take priority — they're often the most specific user signal.
                 val genreSearchTerms = mapOf(
-                    "Action" to listOf("mission impossible", "john wick", "mad max", "die hard", "gladiator"),
-                    "Comedy" to listOf("superbad", "mean girls", "step brothers", "anchorman", "bridesmaids"),
-                    "Drama" to listOf("shawshank", "forrest gump", "green mile", "schindler", "beautiful mind"),
-                    "Sci-Fi" to listOf("interstellar", "inception", "blade runner", "the matrix", "arrival"),
-                    "Horror" to listOf("conjuring", "hereditary", "get out", "scream", "midsommar"),
-                    "Romance" to listOf("pride prejudice", "when harry met sally", "la la land", "before sunrise", "crazy rich")
+                    "Action" to listOf("mission impossible", "john wick", "mad max", "die hard", "speed", "taken"),
+                    "Comedy" to listOf("superbad", "mean girls", "step brothers", "anchorman", "bridesmaids", "game night"),
+                    "Drama" to listOf("shawshank", "forrest gump", "green mile", "schindler", "beautiful mind", "pursuit of happyness"),
+                    "Sci-Fi" to listOf("interstellar", "inception", "blade runner", "the matrix", "arrival", "ex machina"),
+                    "Horror" to listOf("conjuring", "hereditary", "get out", "scream", "midsommar", "sinister"),
+                    "Romance" to listOf("pride prejudice", "when harry met sally", "la la land", "before sunrise", "crazy rich", "notebook")
+                )
+                val settingSearchTerms = mapOf(
+                    "Fantasy world" to listOf("lord of the rings", "harry potter", "the hobbit", "narnia", "princess bride", "willow", "labyrinth", "eragon", "dragonheart"),
+                    "Future/Space" to listOf("star wars", "guardians of the galaxy", "dune", "fifth element", "total recall", "minority report", "edge of tomorrow", "oblivion"),
+                    "Historical period" to listOf("gladiator", "braveheart", "300", "troy", "last samurai", "kingdom of heaven", "master and commander"),
+                    "Real world" to emptyList(),
+                    "Anywhere interesting" to emptyList()
                 )
 
-                val searchTerms = genreSearchTerms[movieQuiz.genre] ?: listOf("popular")
+                val genreTerms = genreSearchTerms[movieQuiz.genre] ?: emptyList()
+                val settingTerms = settingSearchTerms[movieQuiz.setting] ?: emptyList()
+                // Setting terms first so the candidate pool skews toward the world the user wants
+                val searchTerms = (settingTerms + genreTerms).distinct().ifEmpty { listOf("popular movies") }
+
                 val allMovies = mutableListOf<Movie>()
                 for (term in searchTerms) {
                     val results = movieApiService.searchMovies(term, maxResults = 2).getOrNull() ?: emptyList()
                     allMovies.addAll(results)
                 }
-                // Deduplicate by ID
-                var availableMovies = allMovies.distinctBy { it.id }.take(10)
+                // Deduplicate by ID; take more candidates so the AI has a richer pool to rank
+                var availableMovies = allMovies.distinctBy { it.id }.take(15)
 
                 // Fallback if nothing came back
                 if (availableMovies.isEmpty()) {
@@ -105,6 +128,11 @@ class MovieRecommendationViewModel(
                     Log.d("MovieRecommendationVM", "No results from API, using fallback popular movies")
                     availableMovies = getFallbackMovies()
                 }
+
+                // Filter out any previously disliked items before sending to AI
+                val reactions = reactionStore.read()
+                val dislikedIds = reactions.disliked.map { it.id }.toSet()
+                availableMovies = availableMovies.filterNot { it.id in dislikedIds }
 
                 // Fetch full details (description, rating, genre) for each movie
                 availableMovies = availableMovies.mapNotNull { movie ->
@@ -122,11 +150,18 @@ class MovieRecommendationViewModel(
                     return@launch
                 }
 
+                // Build reaction context for AI prompt
+                val reactionContext = ReactionContext(
+                    liked = reactions.liked.filter { it.contentType == RecommendationContentType.MOVIE },
+                    disliked = reactions.disliked.filter { it.contentType == RecommendationContentType.MOVIE }
+                )
+
                 // Get AI-powered recommendations
                 val recommendationResult = recommendationService.getMovieRecommendations(
                     movieQuiz,
                     personalityProfile,
-                    availableMovies
+                    availableMovies,
+                    reactionContext
                 )
 
                 val rankedMovies = recommendationResult.getOrNull() ?: availableMovies
@@ -142,6 +177,11 @@ class MovieRecommendationViewModel(
                         "Based on your preferences for ${movieQuiz.genre} from the ${movieQuiz.era} era"
                     }
                 )
+
+                // Persist results and clear personality-changed flag
+                resultsStore.writeMovies(rankedMovies)
+                personalityQuizStore.clearChangedFlag()
+
                 _isLoading.value = false
 
                 Log.d("MovieRecommendationVM", "Generated ${rankedMovies.size} recommendations")
@@ -247,6 +287,10 @@ class MovieRecommendationViewModel(
                 posterUrl = "https://m.media-amazon.com/images/M/MV5BMmEzNTA0ZDctZTVjOS00ZGUwLWE4MmQtZjg0YjVjOWEwOWY0XkEyXkFqcGc@._V1_SX300.jpg"
             )
         )
+    }
+
+    fun resetForNewGeneration() {
+        hasTriggeredGeneration = false
     }
 
     fun saveMovie(movie: Movie) {
