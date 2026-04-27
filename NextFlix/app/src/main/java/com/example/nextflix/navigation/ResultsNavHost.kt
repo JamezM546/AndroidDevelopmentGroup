@@ -36,7 +36,9 @@ fun ResultsNavHost(
     viewModel: RecommendationViewModel = viewModel(),
     reactionViewModel: ReactionViewModel = viewModel(),
     personalityChanged: Boolean = false,
-    onReact: (RecommendationItem, Reaction?) -> Unit = { _, _ -> }
+    onReact: (RecommendationItem, Reaction?) -> Unit = { _, _ -> },
+    savedIds: Set<String> = emptySet(),
+    onSaveToggle: (RecommendationItem) -> Unit = {}
 ) {
     val navController = rememberNavController()
     val likedIds by reactionViewModel.likedIds.collectAsStateWithLifecycle()
@@ -68,7 +70,9 @@ fun ResultsNavHost(
                         else -> null
                     }
                 },
-                onReact = { item, reaction -> onReact(item, reaction) }
+                onReact = { item, reaction -> onReact(item, reaction) },
+                savedIds = savedIds,
+                onSaveToggle = { item -> onSaveToggle(item) }
             )
         }
         composable(
