@@ -17,22 +17,29 @@ class RecommendationViewModel : ViewModel() {
 
     private val _movieResults = MutableStateFlow<List<RecommendationItem>>(emptyList())
     private val _bookResults = MutableStateFlow<List<RecommendationItem>>(emptyList())
+    private val _dislikedIds = MutableStateFlow<Set<String>>(emptySet())
 
     val visibleItems: StateFlow<List<RecommendationItem>> = combine(
         _contentFilter,
         _movieResults,
-        _bookResults
-    ) { filter, movieResults, bookResults ->
-            when (filter) {
+        _bookResults,
+        _dislikedIds
+    ) { filter, movieResults, bookResults, dislikedIds ->
+            val list = when (filter) {
                 RecommendationContentType.MOVIE -> movieResults
                 RecommendationContentType.BOOK -> bookResults
             }
+            list.filterNot { it.id in dislikedIds }
         }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList()
         )
+
+    fun setDislikedIds(ids: Set<String>) {
+        _dislikedIds.value = ids
+    }
 
     fun setContentFilter(type: RecommendationContentType) {
         _contentFilter.value = type

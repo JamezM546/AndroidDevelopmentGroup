@@ -1,6 +1,7 @@
 package com.example.nextflix.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.outlined.ThumbDown
+import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,6 +43,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.nextflix.data.reaction.Reaction
 import com.example.nextflix.data.recommendation.RecommendationContentType
 import com.example.nextflix.data.recommendation.RecommendationItem
 
@@ -46,7 +52,9 @@ import com.example.nextflix.data.recommendation.RecommendationItem
 fun RecommendationDetailScreen(
     item: RecommendationItem,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    currentReaction: Reaction? = null,
+    onReact: ((Reaction?) -> Unit)? = null
 ) {
     Scaffold(
         modifier = modifier,
@@ -165,6 +173,35 @@ fun RecommendationDetailScreen(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (onReact != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    IconButton(
+                        onClick = { onReact(if (currentReaction == Reaction.LIKED) null else Reaction.LIKED) }
+                    ) {
+                        Icon(
+                            imageVector = if (currentReaction == Reaction.LIKED) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+                            contentDescription = "Like",
+                            tint = if (currentReaction == Reaction.LIKED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(24.dp))
+                    IconButton(
+                        onClick = { onReact(if (currentReaction == Reaction.DISLIKED) null else Reaction.DISLIKED) }
+                    ) {
+                        Icon(
+                            imageVector = if (currentReaction == Reaction.DISLIKED) Icons.Filled.ThumbDown else Icons.Outlined.ThumbDown,
+                            contentDescription = "Dislike",
+                            tint = if (currentReaction == Reaction.DISLIKED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(24.dp))
         }
     }

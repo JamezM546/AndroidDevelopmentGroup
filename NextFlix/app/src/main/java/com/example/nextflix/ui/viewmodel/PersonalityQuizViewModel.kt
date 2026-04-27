@@ -32,6 +32,9 @@ class PersonalityQuizViewModel(
     private val _hasStoredProfile = MutableStateFlow(false)
     val hasStoredProfile: StateFlow<Boolean> = _hasStoredProfile.asStateFlow()
 
+    private val _personalityChangedSinceLastRecs = MutableStateFlow(false)
+    val personalityChangedSinceLastRecs: StateFlow<Boolean> = _personalityChangedSinceLastRecs.asStateFlow()
+
     init {
         viewModelScope.launch {
             val saved = store.read()
@@ -40,7 +43,15 @@ class PersonalityQuizViewModel(
                 _answers.value = saved.answers
                 _hasStoredProfile.value = true
             }
+            _personalityChangedSinceLastRecs.value = store.readChangedFlag()
             _initialLoadDone.value = true
+        }
+    }
+
+    fun clearChangedFlag() {
+        viewModelScope.launch {
+            store.clearChangedFlag()
+            _personalityChangedSinceLastRecs.value = false
         }
     }
 
@@ -59,6 +70,8 @@ class PersonalityQuizViewModel(
         val result = PersonalityQuizResult(answers = _answers.value.toMap())
         store.write(result)
         _lastResult.value = result
+        _hasStoredProfile.value = true
+        _personalityChangedSinceLastRecs.value = true
         Log.d(TAG, "Personality quiz submitted: ${result.answers}")
         return result
     }

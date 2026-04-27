@@ -11,10 +11,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.compose.rememberNavController
+import com.example.nextflix.data.reaction.Reaction
 import com.example.nextflix.data.recommendation.RecommendationContentType
 import com.example.nextflix.data.recommendation.RecommendationItem
 import com.example.nextflix.ui.screens.RecommendationDetailScreen
 import com.example.nextflix.ui.screens.RecommendationResultsScreen
+import com.example.nextflix.ui.viewmodel.ReactionViewModel
 import com.example.nextflix.ui.viewmodel.RecommendationViewModel
 
 private object ResultsRoutes {
@@ -31,9 +33,20 @@ private object ResultsRoutes {
 
 @Composable
 fun ResultsNavHost(
-    viewModel: RecommendationViewModel = viewModel()
+    viewModel: RecommendationViewModel = viewModel(),
+    reactionViewModel: ReactionViewModel = viewModel(),
+    personalityChanged: Boolean = false,
+    onReact: (RecommendationItem, Reaction?) -> Unit = { _, _ -> },
+    savedIds: Set<String> = emptySet(),
+    onSaveToggle: (RecommendationItem) -> Unit = {}
 ) {
     val navController = rememberNavController()
+    val likedIds by reactionViewModel.likedIds.collectAsStateWithLifecycle()
+    val dislikedIds by reactionViewModel.dislikedIds.collectAsStateWithLifecycle()
+
+    LaunchedEffect(dislikedIds) {
+        viewModel.setDislikedIds(dislikedIds)
+    }
 
     NavHost(
         navController = navController,
@@ -48,7 +61,18 @@ fun ResultsNavHost(
                 onContentFilterChange = { viewModel.setContentFilter(it) },
                 onItemClick = { item ->
                     navController.navigate(ResultsRoutes.detailRoute(item))
-                }
+                },
+                personalityChanged = personalityChanged,
+                reactionFor = { id ->
+                    when {
+                        id in likedIds -> Reaction.LIKED
+                        id in dislikedIds -> Reaction.DISLIKED
+                        else -> null
+                    }
+                },
+                onReact = { item, reaction -> onReact(item, reaction) },
+                savedIds = savedIds,
+                onSaveToggle = { item -> onSaveToggle(item) }
             )
         }
         composable(
@@ -74,11 +98,16 @@ fun ResultsNavHost(
                     navController.popBackStack(ResultsRoutes.List, inclusive = false)
                 }
             } else {
+                val reaction = when {
+                    item.id in likedIds -> Reaction.LIKED
+                    item.id in dislikedIds -> Reaction.DISLIKED
+                    else -> null
+                }
                 RecommendationDetailScreen(
                     item = item,
-                    onBack = {
-                        navController.popBackStack()
-                    }
+                    onBack = { navController.popBackStack() },
+                    currentReaction = reaction,
+                    onReact = { r -> onReact(item, r) }
                 )
             }
         }

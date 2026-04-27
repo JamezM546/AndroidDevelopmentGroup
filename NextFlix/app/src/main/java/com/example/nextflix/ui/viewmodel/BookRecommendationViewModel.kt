@@ -10,6 +10,10 @@ import com.example.nextflix.data.models.Book
 import com.example.nextflix.data.models.BookRecommendation
 import com.example.nextflix.data.personality.PersonalityQuizStore
 import com.example.nextflix.data.quiz.BookQuizStore
+import com.example.nextflix.data.reaction.ReactionContext
+import com.example.nextflix.data.reaction.ReactionStore
+import com.example.nextflix.data.recommendation.RecommendationContentType
+import com.example.nextflix.data.recommendation.RecommendationResultsStore
 import com.example.nextflix.data.saved.SavedBooksStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,12 +31,16 @@ class BookRecommendationViewModel(
     private val bookQuizStore = BookQuizStore(application)
     private val personalityQuizStore = PersonalityQuizStore(application)
     private val savedBooksStore = SavedBooksStore(application)
+    private val resultsStore = RecommendationResultsStore(application)
+    private val reactionStore = ReactionStore(application)
 
     private val _recommendations = MutableStateFlow<List<Book>>(emptyList())
     val recommendations: StateFlow<List<Book>> = _recommendations.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private var hasTriggeredGeneration = false
 
     private val _error = MutableStateFlow("")
     val error: StateFlow<String> = _error.asStateFlow()
@@ -47,11 +55,12 @@ class BookRecommendationViewModel(
             val persisted = savedBooksStore.read()
             if (persisted.isNotEmpty()) {
                 _savedBooks.value = persisted
-                val savedIds = persisted.map { it.id }.toSet()
-                _recommendations.update { current ->
-                    current.map { b ->
-                        if (b.id in savedIds && !b.isSaved) b.copy(isSaved = true) else b
-                    }
+            }
+            val savedIds = _savedBooks.value.map { it.id }.toSet()
+            val persistedRecs = resultsStore.readBooks()
+            if (persistedRecs.isNotEmpty()) {
+                _recommendations.value = persistedRecs.map { b ->
+                    b.copy(isSaved = b.id in savedIds)
                 }
             }
             _savedBooks.drop(1).collect { savedBooksStore.write(it) }
@@ -59,6 +68,8 @@ class BookRecommendationViewModel(
     }
 
     fun generateRecommendations() {
+        if (hasTriggeredGeneration) return
+        hasTriggeredGeneration = true
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = ""
@@ -74,8 +85,16 @@ class BookRecommendationViewModel(
                     return@launch
                 }
 
-                // Search with the strongest available quiz signals.
-                val searchQuery = listOf(bookQuiz.genre, bookQuiz.mood)
+                // Map setting values to concrete search terms that surface relevant books.
+                // Google Books search works best with specific genre/world keywords.
+                val settingKeywords = mapOf(
+                    "Fantasy world" to "fantasy magic world",
+                    "Space / futuristic" to "science fiction space future",
+                    "Historical" to "historical fiction",
+                    "Modern day" to ""
+                )
+                val settingTerm = settingKeywords[bookQuiz.setting] ?: bookQuiz.setting
+                val searchQuery = listOf(bookQuiz.genre, settingTerm, bookQuiz.mood)
                     .filter { it.isNotBlank() }
                     .joinToString(" ")
                     .ifBlank { "fiction books" }
@@ -88,14 +107,26 @@ class BookRecommendationViewModel(
                     return@launch
                 }
 
+                // Filter out previously disliked items before sending to AI
+                val reactions = reactionStore.read()
+                val dislikedIds = reactions.disliked.map { it.id }.toSet()
+                val filteredBooks = availableBooks.filterNot { it.id in dislikedIds }
+
+                // Build reaction context for AI prompt
+                val reactionContext = ReactionContext(
+                    liked = reactions.liked.filter { it.contentType == RecommendationContentType.BOOK },
+                    disliked = reactions.disliked.filter { it.contentType == RecommendationContentType.BOOK }
+                )
+
                 // Get AI-powered recommendations
                 val recommendationResult = recommendationService.getBookRecommendations(
                     bookQuiz,
                     personalityProfile,
-                    availableBooks
+                    filteredBooks,
+                    reactionContext
                 )
 
-                val rankedBooks = recommendationResult.getOrNull() ?: emptyList()
+                val rankedBooks = recommendationResult.getOrNull() ?: filteredBooks
                 val savedIds = _savedBooks.value.map { it.id }.toSet()
                 _recommendations.value = rankedBooks.map { book ->
                     book.copy(isSaved = book.id in savedIds)
@@ -109,6 +140,10 @@ class BookRecommendationViewModel(
                     }
                 )
 
+                // Persist results and clear personality-changed flag
+                resultsStore.writeBooks(rankedBooks)
+                personalityQuizStore.clearChangedFlag()
+
                 Log.d(TAG, "Generated ${rankedBooks.size} book recommendations")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to generate recommendations", e)
@@ -117,6 +152,10 @@ class BookRecommendationViewModel(
                 _isLoading.value = false
             }
         }
+    }
+
+    fun resetForNewGeneration() {
+        hasTriggeredGeneration = false
     }
 
     fun saveBook(book: Book) {

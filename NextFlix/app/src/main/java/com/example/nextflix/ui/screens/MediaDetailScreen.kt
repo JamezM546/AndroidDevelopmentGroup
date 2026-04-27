@@ -22,16 +22,22 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.outlined.ThumbDown
+import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import com.example.nextflix.data.reaction.Reaction
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +55,9 @@ import com.example.nextflix.data.models.Movie
 fun MovieDetailScreen(
     movie: Movie,
     onBack: () -> Unit,
-    onSaveToggle: () -> Unit
+    onSaveToggle: () -> Unit,
+    currentReaction: Reaction? = null,
+    onReact: ((Reaction?) -> Unit)? = null
 ) {
     Scaffold(
         topBar = {
@@ -77,7 +85,9 @@ fun MovieDetailScreen(
             unsaveLabel = "Saved",
             onSaveToggle = onSaveToggle,
             leadingIcon = { Icon(Icons.Default.Movie, contentDescription = null) },
-            modifier = Modifier.padding(paddingValues)
+            modifier = Modifier.padding(paddingValues),
+            currentReaction = currentReaction,
+            onReact = onReact
         )
     }
 }
@@ -87,7 +97,9 @@ fun MovieDetailScreen(
 fun BookDetailScreen(
     book: Book,
     onBack: () -> Unit,
-    onSaveToggle: () -> Unit
+    onSaveToggle: () -> Unit,
+    currentReaction: Reaction? = null,
+    onReact: ((Reaction?) -> Unit)? = null
 ) {
     Scaffold(
         topBar = {
@@ -116,7 +128,9 @@ fun BookDetailScreen(
             unsaveLabel = "Saved",
             onSaveToggle = onSaveToggle,
             leadingIcon = { Icon(Icons.Default.Bookmark, contentDescription = null) },
-            modifier = Modifier.padding(paddingValues)
+            modifier = Modifier.padding(paddingValues),
+            currentReaction = currentReaction,
+            onReact = onReact
         )
     }
 }
@@ -133,7 +147,9 @@ private fun MediaDetailContent(
     unsaveLabel: String,
     onSaveToggle: () -> Unit,
     leadingIcon: @Composable () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    currentReaction: Reaction? = null,
+    onReact: ((Reaction?) -> Unit)? = null
 ) {
     Column(
         modifier = modifier
@@ -203,6 +219,31 @@ private fun MediaDetailContent(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+        if (onReact != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                IconButton(onClick = { onReact(if (currentReaction == Reaction.LIKED) null else Reaction.LIKED) }) {
+                    Icon(
+                        imageVector = if (currentReaction == Reaction.LIKED) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+                        contentDescription = "Like",
+                        tint = if (currentReaction == Reaction.LIKED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(24.dp))
+                IconButton(onClick = { onReact(if (currentReaction == Reaction.DISLIKED) null else Reaction.DISLIKED) }) {
+                    Icon(
+                        imageVector = if (currentReaction == Reaction.DISLIKED) Icons.Filled.ThumbDown else Icons.Outlined.ThumbDown,
+                        contentDescription = "Dislike",
+                        tint = if (currentReaction == Reaction.DISLIKED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
         Button(
             onClick = onSaveToggle,
             modifier = Modifier.fillMaxWidth(),
