@@ -25,6 +25,8 @@ import com.example.nextflix.navigation.OnboardingNavHost
 import com.example.nextflix.navigation.ResultsNavHost
 import com.example.nextflix.data.models.Book
 import com.example.nextflix.data.models.Movie
+import com.example.nextflix.data.recommendation.RecommendationContentType
+import com.example.nextflix.data.recommendation.RecommendationItem
 import com.example.nextflix.ui.screens.BookDetailScreen
 import com.example.nextflix.ui.screens.FavoritesScreen
 import com.example.nextflix.ui.screens.MoviePreferenceQuizScreen
@@ -109,6 +111,14 @@ fun NextFlixApp(
     var selectedMovie by remember { mutableStateOf<Movie?>(null) }
     val movieRecommendationViewModel: MovieRecommendationViewModel = viewModel()
     val bookRecommendationViewModel: BookRecommendationViewModel = viewModel()
+    val resultsViewModel: RecommendationViewModel = viewModel()
+    val movieResults by movieRecommendationViewModel.recommendations.collectAsStateWithLifecycle()
+    val bookResults by bookRecommendationViewModel.recommendations.collectAsStateWithLifecycle()
+
+    LaunchedEffect(movieResults, bookResults) {
+        resultsViewModel.setMovieResults(movieResults.map { it.toRecommendationItem() })
+        resultsViewModel.setBookResults(bookResults.map { it.toRecommendationItem() })
+    }
 
     when {
         selectedBook != null -> {
@@ -213,7 +223,7 @@ fun NextFlixApp(
                             onNavigateBack = { selectedTab = AppTab.HOME },
                             onQuizComplete = { showBookRecommendations = true }
                         )
-                        AppTab.RESULTS -> PlaceholderScreen("Results", "Coming soon!")
+                        AppTab.RESULTS -> ResultsNavHost(viewModel = resultsViewModel)
                         AppTab.FAVORITES -> FavoritesScreen(
                             movieViewModel = movieRecommendationViewModel,
                             bookViewModel = bookRecommendationViewModel,
@@ -293,4 +303,31 @@ fun PlaceholderScreen(title: String, message: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+private fun Movie.toRecommendationItem(): RecommendationItem {
+    return RecommendationItem(
+        id = id,
+        contentType = RecommendationContentType.MOVIE,
+        title = title,
+        imageUrl = posterUrl,
+        summary = description.ifBlank { "No description available." },
+        rating = rating?.let { String.format("%.1f/10", it) }
+    )
+}
+
+private fun Book.toRecommendationItem(): RecommendationItem {
+    val subtitleSummary = if (author.isBlank()) {
+        description
+    } else {
+        "$author. $description"
+    }
+    return RecommendationItem(
+        id = id,
+        contentType = RecommendationContentType.BOOK,
+        title = title,
+        imageUrl = thumbnailUrl,
+        summary = subtitleSummary.ifBlank { "No description available." },
+        rating = rating?.let { String.format("%.1f/5", it) }
+    )
 }
