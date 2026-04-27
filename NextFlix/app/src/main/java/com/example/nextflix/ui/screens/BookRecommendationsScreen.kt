@@ -178,11 +178,11 @@ fun BookRecommendationsScreen(
                         BookRecommendationCard(
                             book = book,
                             onSelect = { onBookSelected(book) },
-                            onSaveToggle = { 
+                            onSaveToggle = {
                                 if (book.isSaved) {
                                     viewModel.unsaveBook(book.id)
                                 } else {
-                                    viewModel.saveBook(book.id)
+                                    viewModel.saveBook(book)
                                 }
                             }
                         )

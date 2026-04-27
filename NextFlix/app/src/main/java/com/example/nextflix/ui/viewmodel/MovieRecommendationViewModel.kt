@@ -36,8 +36,8 @@ class MovieRecommendationViewModel(
 
     private val _generatedRecommendation = MutableStateFlow<MovieRecommendation?>(null)
     val generatedRecommendation: StateFlow<MovieRecommendation?> = _generatedRecommendation.asStateFlow()
-    private val _savedMovieIds = MutableStateFlow<Set<String>>(emptySet())
-    val savedMovieIds: StateFlow<Set<String>> = _savedMovieIds.asStateFlow()
+    private val _savedMovies = MutableStateFlow<List<Movie>>(emptyList())
+    val savedMovies: StateFlow<List<Movie>> = _savedMovies.asStateFlow()
 
     fun generateRecommendations() {
         viewModelScope.launch {
@@ -111,7 +111,7 @@ class MovieRecommendationViewModel(
                 )
 
                 val rankedMovies = recommendationResult.getOrNull() ?: availableMovies
-                val savedIds = _savedMovieIds.value
+                val savedIds = _savedMovies.value.map { it.id }.toSet()
                 _recommendations.value = rankedMovies.map { movie ->
                     movie.copy(isSaved = movie.id in savedIds)
                 }
@@ -230,23 +230,27 @@ class MovieRecommendationViewModel(
         )
     }
 
-    fun saveMovie(movieId: String) {
-        _savedMovieIds.update { current -> current + movieId }
+    fun saveMovie(movie: Movie) {
+        _savedMovies.update { current ->
+            if (current.any { it.id == movie.id }) current
+            else current + movie.copy(isSaved = true)
+        }
         _recommendations.update { movies ->
-            movies.map { movie ->
-                if (movie.id == movieId) movie.copy(isSaved = true) else movie
+            movies.map { m ->
+                if (m.id == movie.id) m.copy(isSaved = true) else m
             }
         }
     }
 
     fun unsaveMovie(movieId: String) {
-        _savedMovieIds.update { current -> current - movieId }
+        _savedMovies.update { current -> current.filterNot { it.id == movieId } }
         _recommendations.update { movies ->
-            movies.map { movie ->
-                if (movie.id == movieId) movie.copy(isSaved = false) else movie
+            movies.map { m ->
+                if (m.id == movieId) m.copy(isSaved = false) else m
             }
         }
     }
 
-    fun isMovieSaved(movieId: String): Boolean = movieId in _savedMovieIds.value
+    fun isMovieSaved(movieId: String): Boolean =
+        _savedMovies.value.any { it.id == movieId }
 }
